@@ -1,6 +1,4 @@
-from flask import Flask, abort
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
+from flask import Flask, Response
 from typing import Dict, Any
 import threading
 
@@ -13,8 +11,6 @@ from ingest.utils.logger import logger
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = POSTGRESQL_URI
-db = SQLAlchemy(app)
-migrate = Migrate(app, db)
 
 
 @app.route('/ingest', methods=['POST'])
@@ -29,10 +25,11 @@ def ingest_handler() -> Dict[str, Any]:
     }
 
 
-@app.route('/')
-async def default_handler():
-    return await abort(404)
+@app.errorhandler(404)
+def default_handler(e):
+    return Response(status=404)
+
 
 if __name__ == '__main__':
     logger.debug('starting ingest server...')
-    app.run(host=SERVER_HOST, port=SERVER_PROT, debug=True)
+    app.run(host=SERVER_HOST, port=SERVER_PROT, debug=True, threaded=True)
