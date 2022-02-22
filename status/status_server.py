@@ -1,8 +1,9 @@
-from flask import Flask, Response
+from flask import Flask, Response, request
 from typing import Dict, Any
 
 
 from status.utils.consts import SERVER_HOST, SERVER_PORT
+from status.utils.helpers import check_scan_status
 from status.utils.logger import logger
 
 
@@ -11,8 +12,11 @@ app = Flask(__name__)
 
 @app.route('/status', methods=['GET'])
 def status_handler() -> Dict[str, Any]:
-    # make get status req
-    pass
+    scan_id = request.args.get('scan_id', '')
+    logger.debug(f'checking status for scan_id: {scan_id}')
+    db_res = check_scan_status(scan_id)
+    logger.info(f'{db_res.get("msg", "")}')
+    return {'msg': db_res.get('msg', '')}
 
 
 @app.errorhandler(404)

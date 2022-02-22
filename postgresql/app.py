@@ -4,7 +4,7 @@ from flask import Flask, request, Response
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import exc
 
-from core.utils.consts import SCAN_ID_LENGTH
+from core.utils.helpers import action_response, is_valid_scan_id
 from postgresql.utils.consts import SERVER_HOST, SERVER_PORT, POSTGRESQL_URI
 from postgresql.utils.logger import logger
 
@@ -107,7 +107,7 @@ def status_scan_process() -> Dict[str, str]:
     scan_id = request.args.get('scan_id', '')
     scan = ScansModel.query.filter_by(scan_id=scan_id).first()
     if not scan:
-        msg = f'scan_id: {scan_id} not exists!'
+        msg = f'scan_id: {scan_id} not found!'
         logger.info(msg)
         return action_response('failure', msg)
     return action_response('success', f'scan_id: {scan_id} status is: {scan.status}')
@@ -116,14 +116,6 @@ def status_scan_process() -> Dict[str, str]:
 @app.errorhandler(404)
 def default_handler(e):
     return Response(status=404)
-
-
-def action_response(status: str, msg: str) -> Dict[str, str]:
-    return {'status': status, 'msg': msg}
-
-
-def is_valid_scan_id(scan_id: str) -> bool:
-    return len(scan_id) == SCAN_ID_LENGTH
 
 
 if __name__ == '__main__':
