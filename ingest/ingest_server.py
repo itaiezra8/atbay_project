@@ -4,7 +4,7 @@ import threading
 
 from core.utils.consts import POSTGRESQL_URI
 from ingest.api.process_api import send_process_request
-from ingest.utils.consts import SERVER_HOST, SERVER_PROT
+from ingest.utils.consts import SERVER_HOST, SERVER_PORT
 from ingest.utils.generators import generate_scan_id
 from ingest.utils.logger import logger
 
@@ -32,4 +32,4 @@ def default_handler(e):
 
 if __name__ == '__main__':
     logger.debug('starting ingest server...')
-    app.run(host=SERVER_HOST, port=SERVER_PROT, debug=True, threaded=True)
+    app.run(host=SERVER_HOST, port=SERVER_PORT, debug=True, threaded=True)

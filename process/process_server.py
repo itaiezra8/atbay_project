@@ -1,6 +1,6 @@
 from flask import Flask, request, Response
 
-from process.utils.consts import SERVER_HOST, SERVER_PROT
+from process.utils.consts import SERVER_HOST, SERVER_PORT
 from process.utils.logger import logger
 
 app = Flask(__name__)
@@ -28,4 +28,4 @@ def default_handler(e):
 
 if __name__ == '__main__':
     logger.debug('starting process server...')
-    app.run(host=SERVER_HOST, port=SERVER_PROT, debug=True, threaded=False)
+    app.run(host=SERVER_HOST, port=SERVER_PORT, debug=True, threaded=False)

@@ -5,7 +5,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import exc
 
 from core.utils.consts import SCAN_ID_LENGTH
-from postgresql.utils.consts import SERVER_HOST, SERVER_PROT, POSTGRESQL_URI
+from postgresql.utils.consts import SERVER_HOST, SERVER_PORT, POSTGRESQL_URI
 from postgresql.utils.logger import logger
 
 app = Flask(__name__)
@@ -37,7 +37,7 @@ db.session.commit()
 
 
 @app.route('/new_scan', methods=['POST'])
-def add_scan():
+def add_scan() -> Dict[str, str]:
     data = request.get_json()
     if not data or type(data) != dict:
         msg = 'request body invalid!'
@@ -61,7 +61,7 @@ def add_scan():
 
 
 @app.route('/start_process', methods=['PUT'])
-def start_scan_process():
+def start_scan_process() -> Dict[str, str]:
     scan_id = request.args.get('scan_id', '')
     scan = ScansModel.query.filter_by(scan_id=scan_id).first()
     if not scan:
@@ -75,7 +75,7 @@ def start_scan_process():
 
 
 @app.route('/end_process', methods=['PUT'])
-def end_scan_process():
+def end_scan_process() -> Dict[str, str]:
     scan_id = request.args.get('scan_id', '')
     scan = ScansModel.query.filter_by(scan_id=scan_id).first()
     if not scan:
@@ -89,7 +89,7 @@ def end_scan_process():
 
 
 @app.route('/error_process', methods=['PUT'])
-def error_scan_process():
+def error_scan_process() -> Dict[str, str]:
     scan_id = request.args.get('scan_id', '')
     scan = ScansModel.query.filter_by(scan_id=scan_id).first()
     if not scan:
@@ -100,6 +100,17 @@ def error_scan_process():
     scan.status = 'error'
     db.session.commit()
     return action_response('success', 'updated error in scan process successfully!')
+
+
+@app.route('/status', methods=['GET'])
+def status_scan_process() -> Dict[str, str]:
+    scan_id = request.args.get('scan_id', '')
+    scan = ScansModel.query.filter_by(scan_id=scan_id).first()
+    if not scan:
+        msg = f'scan_id: {scan_id} not exists!'
+        logger.info(msg)
+        return action_response('failure', msg)
+    return action_response('success', f'scan_id: {scan_id} status is: {scan.status}')
 
 
 @app.errorhandler(404)
@@ -117,4 +128,4 @@ def is_valid_scan_id(scan_id: str) -> bool:
 
 if __name__ == '__main__':
     logger.debug('starting ingest server...')
-    app.run(host=SERVER_HOST, port=SERVER_PROT, debug=True)
+    app.run(host=SERVER_HOST, port=SERVER_PORT, debug=True)
