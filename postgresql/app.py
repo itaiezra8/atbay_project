@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict
 from flask import Flask, request, Response
 from flask_sqlalchemy import SQLAlchemy
@@ -16,20 +16,16 @@ db = SQLAlchemy(app)
 
 class ScansModel(db.Model):
     __tablename__ = 'cyber_scans'
-
     scan_id = db.Column(db.String(), primary_key=True)
-    scan_req_time = db.Column(db.TIME())
-    start_scanning_process_time = db.Column(db.TIME())
-    finish_scanning_process_time = db.Column(db.TIME())
+    scan_req_time = db.Column(db.DateTime)
+    start_scanning_process_time = db.Column(db.DateTime)
+    finish_scanning_process_time = db.Column(db.DateTime)
     status = db.Column(db.String())
 
     def __init__(self, scan_id, scan_req_time, status):
         self.scan_id = scan_id
         self.scan_req_time = scan_req_time
         self.status = status
-
-    def __repr__(self):
-        return f'scan {self.scan_id}'
 
 
 db.create_all()
@@ -71,6 +67,7 @@ def start_scan_process() -> Dict[str, str]:
     scan.start_scanning_process_time = datetime.now()
     scan.status = 'running'
     db.session.commit()
+    logger.info(f'scan process of scan_id: {scan_id} has started')
     return action_response('success', 'updated scan start process successfully!')
 
 
@@ -85,6 +82,7 @@ def end_scan_process() -> Dict[str, str]:
     scan.finish_scanning_process_time = datetime.now()
     scan.status = 'complete'
     db.session.commit()
+    logger.info(f'scan process of scan_id: {scan_id} has completed')
     return action_response('success', 'updated scan finish process successfully!')
 
 
@@ -99,6 +97,7 @@ def error_scan_process() -> Dict[str, str]:
     scan.finish_scanning_process_time = datetime.now()
     scan.status = 'error'
     db.session.commit()
+    logger.info(f'scan process of scan_id: {scan_id} found with error')
     return action_response('success', 'updated error in scan process successfully!')
 
 
@@ -107,10 +106,22 @@ def status_scan_process() -> Dict[str, str]:
     scan_id = request.args.get('scan_id', '')
     scan = ScansModel.query.filter_by(scan_id=scan_id).first()
     if not scan:
-        msg = f'scan_id: {scan_id} not found!'
+        msg = f'scan_id: {scan_id} not found'
         logger.info(msg)
         return action_response('failure', msg)
     return action_response('success', f'scan_id: {scan_id} status is: {scan.status}')
+
+
+@app.route('/clean_up', methods=['GET'])
+def clean_up_db() -> Dict[str, str]:
+    delete_num = 0
+    for scan in ScansModel.query:
+        if scan.status == 'complete' and scan.finish_scanning_process_time + timedelta(minutes=20) < datetime.now():
+            db.session.delete(scan)
+            db.session.commit()
+            logger.info(f'deleting scan_id: {scan.scan_id} from DB')
+            delete_num += 1
+    return action_response('success', f'deleted {delete_num} scans')
 
 
 @app.errorhandler(404)
