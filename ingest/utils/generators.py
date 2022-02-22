@@ -1,9 +1,8 @@
 import string
 import random
 
+from core.utils.consts import SCAN_ID_LENGTH
 from ingest.utils.logger import logger
-
-SCAN_ID_LENGTH = 12
 
 
 def generate_scan_id() -> str:

@@ -1,29 +1,118 @@
-import time
+from datetime import datetime
+from typing import Dict
+from flask import Flask, request, Response
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import exc
 
-from flask import Flask, request
-from flask_migrate import Migrate
-from postgresql.cyber_scans import db, ScansModel
+from core.utils.consts import SCAN_ID_LENGTH
 from postgresql.utils.consts import SERVER_HOST, SERVER_PROT, POSTGRESQL_URI
-
 from postgresql.utils.logger import logger
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = POSTGRESQL_URI
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db.init_app(app)
-migrate = Migrate(app, db)
+db = SQLAlchemy(app)
 
 
-@app.route('/login', methods=['POST'])
-def login():
+class ScansModel(db.Model):
+    __tablename__ = 'cyber_scans'
+
+    scan_id = db.Column(db.String(), primary_key=True)
+    scan_req_time = db.Column(db.TIME())
+    start_scanning_process_time = db.Column(db.TIME())
+    finish_scanning_process_time = db.Column(db.TIME())
+    status = db.Column(db.String())
+
+    def __init__(self, scan_id, scan_req_time, status):
+        self.scan_id = scan_id
+        self.scan_req_time = scan_req_time
+        self.status = status
+
+    def __repr__(self):
+        return f'scan {self.scan_id}'
+
+
+db.create_all()
+db.session.commit()
+
+
+@app.route('/new_scan', methods=['POST'])
+def add_scan():
     data = request.get_json()
-    if not data:
-        logger.error('request body invalid!')
+    if not data or type(data) != dict:
+        msg = 'request body invalid!'
+        logger.error(msg)
+        return action_response('failure', msg)
     scan_id = data.get('scan_id', '')
-    new_scan = ScansModel(scan_id=scan_id, scan_req_time=time.time(), status='accepted')
-    db.session.add(new_scan)
+    if not is_valid_scan_id(scan_id):
+        msg = f'scan_id: {scan_id} is not valid!'
+        logger.info(msg)
+        return action_response('failure', msg)
+    scan = ScansModel(scan_id=scan_id, scan_req_time=datetime.now(), status='accepted')
+    try:
+        db.session.add(scan)
+        db.session.commit()
+    except exc.IntegrityError:
+        db.session.rollback()
+        msg = f'{scan_id} already exists!'
+        logger.info(msg)
+        return action_response('failure', msg)
+    return action_response('success', 'scan added successfully!')
+
+
+@app.route('/start_process', methods=['PUT'])
+def start_scan_process():
+    scan_id = request.args.get('scan_id', '')
+    scan = ScansModel.query.filter_by(scan_id=scan_id).first()
+    if not scan:
+        msg = f'scan_id: {scan_id} not exists!'
+        logger.info(msg)
+        return action_response('failure', msg)
+    scan.start_scanning_process_time = datetime.now()
+    scan.status = 'running'
     db.session.commit()
-    return f"Done!!"
+    return action_response('success', 'updated scan start process successfully!')
+
+
+@app.route('/end_process', methods=['PUT'])
+def end_scan_process():
+    scan_id = request.args.get('scan_id', '')
+    scan = ScansModel.query.filter_by(scan_id=scan_id).first()
+    if not scan:
+        msg = f'scan_id: {scan_id} not exists!'
+        logger.info(msg)
+        return action_response('failure', msg)
+    scan.finish_scanning_process_time = datetime.now()
+    scan.status = 'complete'
+    db.session.commit()
+    return action_response('success', 'updated scan finish process successfully!')
+
+
+@app.route('/error_process', methods=['PUT'])
+def error_scan_process():
+    scan_id = request.args.get('scan_id', '')
+    scan = ScansModel.query.filter_by(scan_id=scan_id).first()
+    if not scan:
+        msg = f'scan_id: {scan_id} not exists!'
+        logger.info(msg)
+        return action_response('failure', msg)
+    scan.finish_scanning_process_time = datetime.now()
+    scan.status = 'error'
+    db.session.commit()
+    return action_response('success', 'updated error in scan process successfully!')
+
+
+@app.errorhandler(404)
+def default_handler(e):
+    return Response(status=404)
+
+
+def action_response(status: str, msg: str) -> Dict[str, str]:
+    return {'status': status, 'msg': msg}
+
+
+def is_valid_scan_id(scan_id: str) -> bool:
+    return len(scan_id) == SCAN_ID_LENGTH
 
 
 if __name__ == '__main__':
