@@ -1,21 +1,21 @@
-from flask import Flask, request, Response
+import pika
 
 from core.utils.helpers import is_valid_scan_id
 from process.utils.consts import SERVER_HOST, SERVER_PORT
 from process.utils.helpers import update_scan_in_db, execute_scan_process
 from process.utils.logger import logger
 
-app = Flask(__name__)
+
+logger.info('connecting to rabbit ...')
+connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq'))
+channel = connection.channel()
+channel.queue_declare(queue='scans', durable=True)
+data = []
 
 
-@app.route('/scan', methods=['POST'])
-def process_handler() -> None:
-    logger.debug(f'handling scan request...')
-    data = request.get_json()
-    if not data or type(data) != dict:
-        logger.error('request body invalid!')
-    scan_id = data.get('scan_id', '')
-
+def process_handler(ch, method, properties, body):
+    print(body.decode())
+    scan_id = body.decode()
     if not is_valid_scan_id(scan_id):
         logger.info(f'scan_id: {scan_id} is not valid!')
     logger.info(f'start scanning scan_id: {scan_id}')
@@ -27,13 +27,8 @@ def process_handler() -> None:
     else:
         logger.info(f'finished scanning scan_id: {scan_id}')
         update_scan_in_db('end_process', scan_id)
+    ch.basic_ack(delivery_tag=method.delivery_tag)
 
 
-@app.errorhandler(404)
-def default_handler(e):
-    return Response(status=404)
-
-
-if __name__ == '__main__':
-    logger.debug('starting process server...')
-    app.run(host=SERVER_HOST, port=SERVER_PORT, debug=True, threaded=False)
+channel.basic_consume(queue='scans', on_message_callback=process_handler)
+channel.start_consuming()

@@ -1,16 +1,19 @@
 from flask import Flask, Response
+import pika
 from typing import Dict
 import threading
 
 from core.utils.consts import POSTGRESQL_URI
-from ingest.api.process_api import send_process_request
 from ingest.utils.consts import SERVER_HOST, SERVER_PORT
-from ingest.utils.helpers import generate_scan_id, create_new_scan_in_db
+from ingest.utils.helpers import generate_scan_id, create_new_scan_in_db, publish_scan_to_rabbit
 from ingest.utils.logger import logger
 
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = POSTGRESQL_URI
+connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq'))
+channel = connection.channel()
+channel.queue_declare(queue='scans', durable=True)
 
 
 @app.route('/ingest', methods=['POST'])
@@ -20,7 +23,7 @@ def ingest_handler() -> Dict[str, str]:
     db_res = create_new_scan_in_db(scan_id)
     if db_res.get('status', '') != 'success':
         return {'msg': 'scanning request was not accepted!'}
-    threading.Thread(target=send_process_request, args=[scan_id]).start()
+    threading.Thread(target=publish_scan_to_rabbit, args=[channel, connection, scan_id]).start()
     return {
         'msg': 'scanning request accepted!',
         'scan_id': scan_id

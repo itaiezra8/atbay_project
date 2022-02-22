@@ -1,3 +1,4 @@
+import pika
 import requests
 import string
 import random
@@ -20,3 +21,13 @@ def create_new_scan_in_db(scan_id: str) -> Dict[str, str]:
     except requests.exceptions.RequestException as err:
         return action_response('failure', str(err))
     return response.json()
+
+
+def publish_scan_to_rabbit(channel, connection, scan_id: str) -> None:
+    channel.basic_publish(
+        exchange='at-bay',
+        routing_key='scans',
+        body=scan_id,
+        properties=pika.BasicProperties(delivery_mode=2)
+    )
+    connection.close()
