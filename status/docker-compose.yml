@@ -1,0 +1,20 @@
+version: '3'
+
+services:
+  status:
+    build: .
+    ports:
+      - "5030:5030"
+    depends_on:
+      - "postgres"
+
+  postgres:
+    image: 'postgres:13.1'
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-q", "-d", "postgres", "-U", "root" ]
+      timeout: 45s
+      interval: 10s
+      retries: 10
+    restart: always
+    ports:
+      - "5432:5432"

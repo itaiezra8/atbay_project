@@ -1,8 +1,8 @@
 FROM python:3.7-alpine
 WORKDIR /code
 COPY . .
-ADD ../core /core
+COPY ../core /core
 RUN apk add --no-cache gcc musl-dev linux-headers
-RUN pip install -r  postgresql/requirements.txt
+RUN pip install -r requirements.txt
 EXPOSE 5050
-CMD [ "python", "postgresql/app.py"]
+CMD [ "python", "app.py"]

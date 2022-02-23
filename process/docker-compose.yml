@@ -1,0 +1,25 @@
+version: '3'
+
+services:
+  process:
+    build: .
+    depends_on:
+      - "rabbitmq"
+      - "postgres"
+
+  rabbitmq:
+    image: 'rabbitmq:3.6-management-alpine'
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+
+  postgres:
+    image: 'postgres:13.1'
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-q", "-d", "postgres", "-U", "root" ]
+      timeout: 45s
+      interval: 10s
+      retries: 10
+    restart: always
+    ports:
+      - "5432:5432"

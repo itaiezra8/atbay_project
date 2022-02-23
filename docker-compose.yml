@@ -1,0 +1,53 @@
+version: '3'
+
+services:
+  ingest:
+    build: ingest/.
+    ports:
+      - "5010:5010"
+    depends_on:
+      - "rabbitmq"
+      - "postgres"
+
+  process:
+    build: process/.
+    depends_on:
+      - "rabbitmq"
+      - "postgres"
+
+  status:
+    build: status/.
+    ports:
+      - "5030:5030"
+    depends_on:
+      - "postgres"
+
+  postgresql:
+    build: postgresql/.
+    ports:
+      - "5050:5050"
+    depends_on:
+      - "postgres"
+
+  postgres:
+    image: 'postgres:13.1'
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-q", "-d", "postgres", "-U", "root" ]
+      timeout: 45s
+      interval: 10s
+      retries: 10
+    restart: always
+    user: postgres
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+
+  rabbitmq:
+    image: 'rabbitmq:3.6-management-alpine'
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+
