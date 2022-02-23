@@ -15,7 +15,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = POSTGRESQL_URI
 
 def connect_to_rabbitmq() -> None:
     logger.info('connecting to rabbit ...')
-    connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq'))
+    connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
     channel = connection.channel()
     channel.queue_declare(queue='scans', durable=True)
     app.config['RABBITMQ_CONNECTION'] = connection
@@ -29,7 +29,9 @@ def ingest_handler() -> Dict[str, str]:
     db_res = create_new_scan_in_db(scan_id)
     if db_res.get('status', '') != 'success':
         return {'msg': 'scanning request was not accepted!'}
-    threading.Thread(target=publish_scan_to_rabbit, args=[app.config['RABBITMQ_CHANNEL'], app.config['RABBITMQ_CONNECTION'], scan_id]).start()
+    threading.Thread(target=publish_scan_to_rabbit,
+                     args=[app.config['RABBITMQ_CHANNEL'], app.config['RABBITMQ_CONNECTION'], scan_id]
+                     ).start()
     return {
         'msg': 'scanning request accepted!',
         'scan_id': scan_id

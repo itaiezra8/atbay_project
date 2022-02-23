@@ -12,7 +12,7 @@ class Logger:
         formatter = logging.Formatter(f'%(asctime)s | %(levelname)s | {self.service} | %(message)s')
 
         sh = logging.StreamHandler(sys.stdout)
-        sh.setLevel(logging.DEBUG)
+        sh.setLevel(logging.INFO)
         sh.setFormatter(formatter)
 
         fh = logging.FileHandler('logs.log')

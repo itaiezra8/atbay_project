@@ -5,7 +5,7 @@ import random
 from typing import Dict
 
 from core.utils.helpers import action_response
-from core.utils.consts import SCAN_ID_LENGTH, POSTGRES_URL
+from core.utils.consts import SCAN_ID_LENGTH, POSTGRES_URL, RABBIT_EXCHANGE
 from ingest.utils.logger import logger
 
 
@@ -25,9 +25,9 @@ def create_new_scan_in_db(scan_id: str) -> Dict[str, str]:
 
 def publish_scan_to_rabbit(channel, connection, scan_id: str) -> None:
     channel.basic_publish(
-        exchange='at-bay',
-        routing_key='scans',
+        exchange=RABBIT_EXCHANGE,
+        routing_key=scan_id,
         body=scan_id,
         properties=pika.BasicProperties(delivery_mode=2)
     )
-    connection.close()
+    logger.info(f'published scan_id: {scan_id} to rabbit')
