@@ -1,16 +1,16 @@
 import pika
 
 from core.utils.helpers import is_valid_scan_id
-from process.utils.consts import SERVER_HOST, SERVER_PORT
 from process.utils.helpers import update_scan_in_db, execute_scan_process
 from process.utils.logger import logger
 
 
-logger.info('connecting to rabbit ...')
-connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq'))
-channel = connection.channel()
-channel.queue_declare(queue='scans', durable=True)
-data = []
+def connect_to_rabbitmq():
+    logger.info('connecting to rabbit ...')
+    connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq'))
+    channel = connection.channel()
+    channel.queue_declare(queue='scans', durable=True)
+    return channel
 
 
 def process_handler(ch, method, properties, body):
@@ -30,5 +30,8 @@ def process_handler(ch, method, properties, body):
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
 
-channel.basic_consume(queue='scans', on_message_callback=process_handler)
-channel.start_consuming()
+if __name__ == '__main__':
+    channel = connect_to_rabbitmq()
+    logger.info('start consuming rabbit...')
+    channel.basic_consume(queue='scans', on_message_callback=process_handler)
+    channel.start_consuming()

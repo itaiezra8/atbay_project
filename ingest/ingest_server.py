@@ -11,9 +11,15 @@ from ingest.utils.logger import logger
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = POSTGRESQL_URI
-connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq'))
-channel = connection.channel()
-channel.queue_declare(queue='scans', durable=True)
+
+
+def connect_to_rabbitmq() -> None:
+    logger.info('connecting to rabbit ...')
+    connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq'))
+    channel = connection.channel()
+    channel.queue_declare(queue='scans', durable=True)
+    app.config['RABBITMQ_CONNECTION'] = connection
+    app.config['RABBITMQ_CHANNEL'] = channel
 
 
 @app.route('/ingest', methods=['POST'])
@@ -23,7 +29,7 @@ def ingest_handler() -> Dict[str, str]:
     db_res = create_new_scan_in_db(scan_id)
     if db_res.get('status', '') != 'success':
         return {'msg': 'scanning request was not accepted!'}
-    threading.Thread(target=publish_scan_to_rabbit, args=[channel, connection, scan_id]).start()
+    threading.Thread(target=publish_scan_to_rabbit, args=[app.config['RABBITMQ_CHANNEL'], app.config['RABBITMQ_CONNECTION'], scan_id]).start()
     return {
         'msg': 'scanning request accepted!',
         'scan_id': scan_id
@@ -36,5 +42,6 @@ def default_handler(e):
 
 
 if __name__ == '__main__':
+    connect_to_rabbitmq()
     logger.debug('starting ingest server...')
     app.run(host=SERVER_HOST, port=SERVER_PORT, debug=True, threaded=True)
