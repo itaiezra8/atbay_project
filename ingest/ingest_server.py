@@ -3,14 +3,12 @@ import pika
 from typing import Dict
 import threading
 
-from core.utils.consts import POSTGRESQL_URI
 from ingest.utils.consts import SERVER_HOST, SERVER_PORT
 from ingest.utils.helpers import generate_scan_id, create_new_scan_in_db, publish_scan_to_rabbit
 from ingest.utils.logger import logger
 
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = POSTGRESQL_URI
 
 
 def connect_to_rabbitmq() -> None:
