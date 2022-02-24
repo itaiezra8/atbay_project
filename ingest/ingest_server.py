@@ -28,7 +28,7 @@ def ingest_handler() -> Dict[str, str]:
     scan_id = generate_scan_id()
     db_res = create_new_scan_in_db(scan_id)
     if db_res.get('status', '') != 'success':
-        return {'msg': 'scanning request was not accepted!'}
+        return {'msg': f'scanning request was not accepted: {db_res.get("msg", "")}'}
     threading.Thread(target=publish_scan_to_rabbit,
                      args=[app.config['RABBITMQ_CHANNEL'], app.config['RABBITMQ_CONNECTION'], scan_id]
                      ).start()

@@ -2,14 +2,13 @@ version: '3'
 
 services:
   postgres:
-    image: 'postgres:13.1'
+    image: 'postgres:latest'
     healthcheck:
-      test: [ "CMD", "pg_isready", "-q", "-d", "postgres", "-U", "root" ]
+      test: [ "CMD", "pg_isready", "-q", "-d", "postgres", "-U", "postgres" ]
       timeout: 45s
       interval: 10s
       retries: 10
     restart: always
-    user: postgres
     environment:
       POSTGRES_PASSWORD: postgres
       POSTGRES_USER: postgres
@@ -28,6 +27,15 @@ services:
       timeout: 15s
       retries: 1
 
+  postgresql:
+    build:
+      context: .
+      dockerfile: postgresql/Dockerfile
+    ports:
+      - "5050:5050"
+    depends_on:
+      - "postgres"
+
   ingest:
     build:
       context: .
@@ -36,6 +44,7 @@ services:
       - "5010:5010"
     depends_on:
       - "rabbitmq"
+      - "postgresql"
 
   process:
     build:
@@ -43,6 +52,7 @@ services:
       dockerfile: process/Dockerfile
     depends_on:
       - "rabbitmq"
+      - "postgresql"
 
   status:
     build:
@@ -52,12 +62,4 @@ services:
       - "5030:5030"
     depends_on:
       - "postgres"
-
-  postgresql:
-    build:
-      context: .
-      dockerfile: postgresql/Dockerfile
-    ports:
-      - "5050:5050"
-    depends_on:
-      - "postgres"
+      - "postgresql"
