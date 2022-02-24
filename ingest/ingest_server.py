@@ -15,7 +15,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = POSTGRESQL_URI
 
 def connect_to_rabbitmq() -> None:
     logger.info('connecting to rabbit ...')
-    connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+    connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq'))
     channel = connection.channel()
     channel.queue_declare(queue='scans', durable=True)
     app.config['RABBITMQ_CONNECTION'] = connection

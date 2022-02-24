@@ -1,8 +1,9 @@
-FROM python:3.7-alpine
+FROM python:3.9-alpine
 WORKDIR /code
-COPY . .
-COPY ../core /core
-RUN apk add --no-cache gcc musl-dev linux-headers
-RUN pip install -r requirements.txt
+COPY postgresql /code/postgresql
+ADD core /code/core
+RUN apk add --no-cache libpq-dev gcc musl-dev linux-headers
+RUN pip install -r postgresql/requirements.txt
 EXPOSE 5050
-CMD [ "python", "app.py"]
+ENV PYTHONPATH "${PYTHONPATH}:/code"
+CMD [ "python", "postgresql/app.py"]

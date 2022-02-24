@@ -1,3 +1,5 @@
 flask
 flask_sqlalchemy
 sqlalchemy
+psycopg2==2.9.3
+ConfigParser==5.2.0

@@ -44,7 +44,7 @@ def add_scan() -> Dict[str, str]:
         msg = f'scan_id: {scan_id} is not valid!'
         logger.info(msg)
         return action_response('failure', msg)
-    scan = ScansModel(scan_id=scan_id, scan_req_time=datetime.now(), status='accepted')
+    scan = ScansModel(scan_id=scan_id, scan_req_time=datetime.now(), status='ACCEPTED')
     try:
         db.session.add(scan)
         db.session.commit()
@@ -65,7 +65,7 @@ def start_scan_process() -> Dict[str, str]:
         logger.info(msg)
         return action_response('failure', msg)
     scan.start_scanning_process_time = datetime.now()
-    scan.status = 'running'
+    scan.status = 'RUNNING'
     db.session.commit()
     logger.info(f'scan process of scan_id: {scan_id} has started')
     return action_response('success', 'updated scan start process successfully!')
@@ -80,7 +80,7 @@ def end_scan_process() -> Dict[str, str]:
         logger.info(msg)
         return action_response('failure', msg)
     scan.finish_scanning_process_time = datetime.now()
-    scan.status = 'complete'
+    scan.status = 'COMPLETE'
     db.session.commit()
     logger.info(f'scan process of scan_id: {scan_id} has completed')
     return action_response('success', 'updated scan finish process successfully!')
@@ -95,7 +95,7 @@ def error_scan_process() -> Dict[str, str]:
         logger.info(msg)
         return action_response('failure', msg)
     scan.finish_scanning_process_time = datetime.now()
-    scan.status = 'error'
+    scan.status = 'ERROR'
     db.session.commit()
     logger.info(f'scan process of scan_id: {scan_id} found with error')
     return action_response('success', 'updated error in scan process successfully!')
@@ -116,7 +116,7 @@ def status_scan_process() -> Dict[str, str]:
 def clean_up_db() -> Dict[str, str]:
     delete_num = 0
     for scan in ScansModel.query:
-        if scan.status == 'complete' and scan.finish_scanning_process_time + timedelta(minutes=20) < datetime.now():
+        if scan.status == 'COMPLETE' and scan.finish_scanning_process_time + timedelta(minutes=20) < datetime.now():
             db.session.delete(scan)
             db.session.commit()
             logger.info(f'deleting scan_id: {scan.scan_id} from DB')

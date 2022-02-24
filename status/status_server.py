@@ -1,7 +1,6 @@
 from flask import Flask, Response, request
 from typing import Dict, Any
 
-
 from status.utils.consts import SERVER_HOST, SERVER_PORT
 from status.utils.helpers import check_scan_status
 from status.utils.logger import logger

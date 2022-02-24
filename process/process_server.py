@@ -9,7 +9,7 @@ from process.utils.logger import logger
 
 def connect_to_rabbitmq():
     logger.info('connecting to rabbit ...')
-    connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+    connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq'))
     channel = connection.channel()
     channel.exchange_declare(exchange=RABBIT_EXCHANGE, exchange_type='topic')
     channel.queue_declare(queue=RABBIT_QUEUE, durable=True)

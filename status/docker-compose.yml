@@ -2,7 +2,9 @@ version: '3'
 
 services:
   status:
-    build: .
+    build:
+      context: .
+      dockerfile: status/Dockerfile
     ports:
       - "5030:5030"
     depends_on:

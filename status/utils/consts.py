@@ -1,3 +1,3 @@
-SERVER_HOST = 'localhost'
+SERVER_HOST = '0.0.0.0'
 SERVER_PORT = '5030'
 SERVICE_NAME = 'status'

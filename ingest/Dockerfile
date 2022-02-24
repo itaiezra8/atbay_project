@@ -1,8 +1,9 @@
-FROM python:3.7-alpine
+FROM python:3.9-alpine
 WORKDIR /code
-COPY . .
-COPY ../core /core
+COPY ingest /code/ingest
+ADD core /code/core
 RUN apk add --no-cache gcc musl-dev linux-headers
-RUN pip install -r  requirements.txt
+RUN pip install -r  ingest/requirements.txt
 EXPOSE 5010
-CMD [ "python", "ingest_server.py"]
+ENV PYTHONPATH "${PYTHONPATH}:/code"
+CMD [ "python", "ingest/ingest_server.py"]
